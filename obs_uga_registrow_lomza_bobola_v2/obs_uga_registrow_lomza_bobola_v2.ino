@@ -4,7 +4,7 @@
 
 int i=0;
 const unsigned long delta_time = 4000; // czas po jakim linia zostanie wyłaczona w ms
-
+const unsigned long delta_tremolo_time = 200;
 // definiowanie linii wejściowych
 #define reg_1 19
 #define reg_2 18
@@ -82,7 +82,7 @@ unsigned long line_ON_time_5;
 unsigned long line_ON_time_6;
 unsigned long line_ON_time_7;
 unsigned long line_ON_time_8;
-unsigned long line_ON_time_9;
+unsigned long line_ON_time_9 = 0;
 unsigned long line_ON_time_10;
 unsigned long line_ON_time_11;
 unsigned long line_ON_time_12;
@@ -105,7 +105,7 @@ unsigned long line_OFF_time_5;
 unsigned long line_OFF_time_6;
 unsigned long line_OFF_time_7;
 unsigned long line_OFF_time_8;
-unsigned long line_OFF_time_9;
+unsigned long line_OFF_time_9 = 0;
 unsigned long line_OFF_time_10;
 unsigned long line_OFF_time_11;
 unsigned long line_OFF_time_12;
@@ -151,8 +151,8 @@ unsigned long line_OFF_time[22] = {line_OFF_time_1, line_OFF_time_2, line_OFF_ti
 int state_regs[22] = {state_reg_1, state_reg_2, state_reg_3, state_reg_4, state_reg_5, state_reg_6, state_reg_7, state_reg_8, state_reg_9, state_reg_10, state_reg_11, state_reg_12, state_reg_13, state_reg_14, state_reg_15, state_reg_16, state_reg_17, state_reg_18, state_reg_19, state_reg_20, state_reg_21,state_reg_22};
 unsigned long current_time = 0;
 int value_reg = 0;
-
-
+int tremolo = 8; // linia tremolo dlatego że  i=8 dla registru 9 (reg_9)
+bool line_state_9 = false; // stan lini tremolo na registrze 9
 
 void setup() {
    Serial.begin(9600);
@@ -173,32 +173,62 @@ Serial.print(i);
 Serial.println(" ok");
      pinMode(line_OFF_reg[i], OUTPUT); // Ustawianie pinów wyściowych OFF
      digitalWrite(line_OFF_reg[i], LOW);
-Serial.print("OUT OFF "); 
+Serial.print("output OFF "); 
 Serial.print(i);
 Serial.println(" ok");    
     }
 }
 void loop() {
+// obsługa tremolo na reg_9 
+
+   if (digitalRead(reg_9) == HIGH) {
+        if (millis() % 200 < 100) {
+        digitalWrite(line_ON_reg_9, HIGH);
+        digitalWrite(line_OFF_reg_9, LOW);
+        line_state_9 = true;
+        } 
+        else {
+        digitalWrite(line_ON_reg_9, LOW);
+        digitalWrite(line_OFF_reg_9, HIGH);
+        line_state_9 = false;
+        }
+   } else
+   {
+    digitalWrite(line_OFF_reg_9, LOW);
+    digitalWrite(line_ON_reg_9, LOW);
+   }
+
+// koniec obsługi tremolo
+
+// Tu zaczyna się obsługa pozostałych linii
+  
    for(int i = 0; i < 22; ++i){
     value_reg = digitalRead(reg_in_pins[i]);  // odczyt pin wejść i właczenie linii wyjściowej
   if (state_regs[i] != value_reg){
     
   
-    if (value_reg == HIGH){            
-      digitalWrite(line_OFF_reg[i], LOW);
-      digitalWrite(line_ON_reg[i], HIGH);
-      line_ON_time[i] = millis();
+    if (value_reg == HIGH){   
       Serial.print("Włączenie zasuwy "); 
       Serial.print(i+1);
-      Serial.println(" ok");
-     }
+      Serial.println(" ok");         
+     if( i!=tremolo){
+      digitalWrite(line_OFF_reg[i], LOW);
+    
+      digitalWrite(line_ON_reg[i], HIGH);
+      line_ON_time[i] = millis();
+      
+          }
+       }
      else{
-      digitalWrite(line_ON_reg[i], LOW);
-      digitalWrite(line_OFF_reg[i], HIGH);
-      line_OFF_time[i] = millis();
       Serial.print("Wyłącznie zasuwy ");
       Serial.print(i+1);
       Serial.println(" ok"); 
+      if( i!=tremolo){
+      digitalWrite(line_ON_reg[i], LOW);
+      digitalWrite(line_OFF_reg[i], HIGH);
+      line_OFF_time[i] = millis();
+      
+      }
      }
    }
  state_regs[i] = value_reg;  
@@ -212,12 +242,12 @@ lineOFF_after_time(); // wyłacza linię po zadanym casie
 void lineOFF_after_time(){
   current_time = millis();
   for( i = 0; i < 22; ++i){
-    
-    if(current_time > (line_ON_time[i] + delta_time)) {
+                            // // && i != 7 dla pominięcia wyłaczenia ON 8 zasuwy
+    if(current_time > (line_ON_time[i] + delta_time)&& i != 7 && i != 8) {
       digitalWrite(line_ON_reg[i], LOW);
     }
-
-     if(current_time > (line_OFF_time[i] + delta_time)) {
+                           // && i != 7 dla pominięcia wyłaczenia OFF 8 zasuwy
+     if(current_time > (line_OFF_time[i] + delta_time) && i != 7 && i != 8) {
       digitalWrite(line_OFF_reg[i], LOW);
     }
   }
