@@ -81,8 +81,8 @@ unsigned long line_ON_time_4;
 unsigned long line_ON_time_5;
 unsigned long line_ON_time_6;
 unsigned long line_ON_time_7;
-unsigned long line_ON_time_8;
-unsigned long line_ON_time_9 = 0;
+unsigned long line_ON_time_8 = 0;
+unsigned long line_ON_time_9;
 unsigned long line_ON_time_10;
 unsigned long line_ON_time_11;
 unsigned long line_ON_time_12;
@@ -104,8 +104,8 @@ unsigned long line_OFF_time_4;
 unsigned long line_OFF_time_5;
 unsigned long line_OFF_time_6;
 unsigned long line_OFF_time_7;
-unsigned long line_OFF_time_8;
-unsigned long line_OFF_time_9 = 0;
+unsigned long line_OFF_time_8 = 0;
+unsigned long line_OFF_time_9;
 unsigned long line_OFF_time_10;
 unsigned long line_OFF_time_11;
 unsigned long line_OFF_time_12;
@@ -151,8 +151,8 @@ unsigned long line_OFF_time[22] = {line_OFF_time_1, line_OFF_time_2, line_OFF_ti
 int state_regs[22] = {state_reg_1, state_reg_2, state_reg_3, state_reg_4, state_reg_5, state_reg_6, state_reg_7, state_reg_8, state_reg_9, state_reg_10, state_reg_11, state_reg_12, state_reg_13, state_reg_14, state_reg_15, state_reg_16, state_reg_17, state_reg_18, state_reg_19, state_reg_20, state_reg_21,state_reg_22};
 unsigned long current_time = 0;
 int value_reg = 0;
-int tremolo = 8; // linia tremolo dlatego że  i=8 dla registru 9 (reg_9)
-bool line_state_9 = false; // stan lini tremolo na registrze 9
+int tremolo = 7; // linia tremolo dlatego że  i=8 dla registru 9 (reg_9)
+bool line_state_8 = false; // stan lini tremolo na registrze 9
 
 void setup() {
    Serial.begin(9600);
@@ -179,23 +179,23 @@ Serial.println(" ok");
     }
 }
 void loop() {
-// obsługa tremolo na reg_9 
+// obsługa tremolo na reg_8 
 
-   if (digitalRead(reg_9) == HIGH) {
+   if (digitalRead(reg_8) == HIGH) {
         if (millis() % 200 < 100) {
-        digitalWrite(line_ON_reg_9, HIGH);
-        digitalWrite(line_OFF_reg_9, LOW);
-        line_state_9 = true;
+        digitalWrite(line_ON_reg_8, HIGH);
+        digitalWrite(line_OFF_reg_8, LOW);
+        line_state_8 = true;
         } 
         else {
-        digitalWrite(line_ON_reg_9, LOW);
-        digitalWrite(line_OFF_reg_9, HIGH);
-        line_state_9 = false;
+        digitalWrite(line_ON_reg_8, LOW);
+        digitalWrite(line_OFF_reg_8, HIGH);
+        line_state_8 = false;
         }
    } else
    {
-    digitalWrite(line_OFF_reg_9, LOW);
-    digitalWrite(line_ON_reg_9, LOW);
+    digitalWrite(line_OFF_reg_8, LOW);
+    digitalWrite(line_ON_reg_8, LOW);
    }
 
 // koniec obsługi tremolo
@@ -243,11 +243,11 @@ void lineOFF_after_time(){
   current_time = millis();
   for( i = 0; i < 22; ++i){
                             // // && i != 7 dla pominięcia wyłaczenia ON 8 zasuwy
-    if(current_time > (line_ON_time[i] + delta_time)&& i != 7 && i != 8) {
+    if(current_time > (line_ON_time[i] + delta_time)&& i != 7 && i != 8 && i != 14 && i != 15) {
       digitalWrite(line_ON_reg[i], LOW);
     }
                            // && i != 7 dla pominięcia wyłaczenia OFF 8 zasuwy
-     if(current_time > (line_OFF_time[i] + delta_time) && i != 7 && i != 8) {
+     if(current_time > (line_OFF_time[i] + delta_time)&& i != 7 && i != 8 && i != 14 && i != 15) {
       digitalWrite(line_OFF_reg[i], LOW);
     }
   }
