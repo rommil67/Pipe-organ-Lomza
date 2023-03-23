@@ -243,11 +243,11 @@ void lineOFF_after_time(){
   current_time = millis();
   for( i = 0; i < 22; ++i){
                             // // && i != 7 dla pominięcia wyłaczenia ON 8 zasuwy
-    if(current_time > (line_ON_time[i] + delta_time)&& i != 7 && i != 8 && i != 14 && i != 15) {
+    if(current_time > (line_ON_time[i] + delta_time)&& i != 7 && i != 8 && i != 14 && i != 15 && i != 9) {
       digitalWrite(line_ON_reg[i], LOW);
     }
                            // && i != 7 dla pominięcia wyłaczenia OFF 8 zasuwy
-     if(current_time > (line_OFF_time[i] + delta_time)&& i != 7 && i != 8 && i != 14 && i != 15) {
+     if(current_time > (line_OFF_time[i] + delta_time)&& i != 7 && i != 8 && i != 14 && i != 15 && i != 9) {
       digitalWrite(line_OFF_reg[i], LOW);
     }
   }
