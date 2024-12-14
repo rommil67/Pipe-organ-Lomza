@@ -1,7 +1,7 @@
 
 // MIDI_Mini_Setzer_v.0.2
 
-
+#include <EEPROM.h>
 #include <MIDI.h>
 
 MIDI_CREATE_DEFAULT_INSTANCE();
@@ -16,6 +16,7 @@ int combinationPins[6] = {0};
 int combinationLedPins[6] = {0};
 //piston Set
 const int pistonSetPin = 52;
+const int pistonSetEepromPin = 53;
 unsigned long millisStorage = 0;
 
 bool ledState[22] = {false}; // Tablica do przechowywania stanu diod
@@ -24,6 +25,8 @@ bool buttonOnState[22] = {false}; // Tablica do przechowywania stanu przycisków
 bool combinationLedState[6] = {false}; // Tablica do przechowywania stanu diod WK
 bool combinationButtonState[6] = {false}; //Tablica do przechowywania stanu p
 bool pistonSetState = false;
+bool pistonSetEepromState = false;
+int eepromWriteStop = 1;
 bool freeComb[6][22] = {false}; // // Tablica dwuwymiarowa  do przechowywania stanu WK
 
 const byte midiChannel = 1; // Domyślny numer kanału MIDI (od 1 do 16)
@@ -44,7 +47,7 @@ for (int i = 0; i < 22; i++) {
   pinMode(buttonOnPins[i], INPUT_PULLUP);
   pinMode(ledPins[i], OUTPUT);
   digitalWrite(ledPins[i], LOW);
-
+  
 }
 
   for (int i = 0; i < 6; i++) {
@@ -53,10 +56,13 @@ for (int i = 0; i < 22; i++) {
     
   }
   pinMode(pistonSetPin, INPUT_PULLUP);
+  pinMode(pistonSetEepromPin, INPUT_PULLUP);
   //digitalWrite(pistonSetPin, HIGH);
 //registerLedOff();
 //freeCombLedOff();
-//delay(2000);
+loadFromEEPROM();
+
+delay(2000);
 }
 
 void loop() {
@@ -81,12 +87,11 @@ void loop() {
   }
 
   pistonSetState = digitalRead(pistonSetPin);
-  if (pistonSetState == LOW && millisStorage < millis()+500){
-    millisStorage = millis();
-   setFunction();
-  }
+  pistonSetEepromState = digitalRead(pistonSetEepromPin);
  
-pistonControls();
+ 
+ 
+//pistonControls();
 
 }
 
@@ -98,6 +103,7 @@ void pistonControls(){
    
    readFreeComb();
    //Serial.println("Comb 1");
+   combinationPins[0] = 0;
  }  
 
  if (combinationPins[1] == 1 && millisStorage < millis()+100){
@@ -105,6 +111,7 @@ void pistonControls(){
    
    readFreeComb();
    //Serial.println("Comb 2");
+   combinationPins[1]=0;
  }  
 
   if (combinationPins[2] == 1 && millisStorage < millis()+100){
@@ -112,6 +119,7 @@ void pistonControls(){
    
    readFreeComb();
    //Serial.println("Comb 3");   
+   combinationPins[2]=0;
  }  
 
   if (combinationPins[3] == 1 && millisStorage < millis()+100){
@@ -119,74 +127,96 @@ void pistonControls(){
    
    readFreeComb();
    //Serial.println("Comb 3");   
+   combinationPins[3]=0;
  }  
 
   if (combinationPins[4] == 1 && millisStorage < millis()+100){
    millisStorage = millis();
    
    readFreeComb();
-   //Serial.println("Comb 3");   
+   //Serial.println("Comb 3");
+   combinationPins[4]=0;   
  }  
 
   if (combinationPins[5] == 1 && millisStorage < millis()+100){
    millisStorage = millis();
    
    readFreeComb();
-   //Serial.println("Comb 3");   
+   //Serial.println("Comb 3");
+   combinationPins[5]=0;
+
  }  
 }
 
-void setFunction() {
- 
-   for (int j = 0; j < 3; j++) {
-    if(digitalRead(combinationPins[j]) == LOW){
-     for (int i = 0; i < 22; i++) {
-     freeComb[j][i] = ledState[i];
-      }        
-    }
-  }
-}
-
-void readFreeComb() {
+void setFunction() { // funkcja zapisuje stan registrów do tablicy dwuwymiarowej freeComb
  
    for (int j = 0; j < 6; j++) {
-    if (combinationPins[j] == 1){
+    if(combinationPins[j] == 1){
+       for (int i = 0; i < 22; i++) {
+        freeComb[j][i] = ledState[i];
+      } 
+     combinationPins[j] = 0;     
+    }
+  }
+}
+
+void readFreeComb() {   // funkcja odczytuje stan registrów z tablicy dwuwymiarowej freeComb
+ 
+   for (int j = 0; j < 6; j++) {
+     if (combinationPins[j] == 1){
      
      
-     for (int i = 0; i < 22; i++) {
-    if (freeComb[j][i] == true  && !ledState[i]){
-       digitalWrite(ledPins[i], LOW); // Włącz diodę
-       ledState[i] = true; // Zapisz stan diody jako włączony
-       MIDI.sendNoteOn(i+36, 127, 1);
-       }
-    if (freeComb[j][i] == false && ledState[i]){
-       digitalWrite(ledPins[i], HIGH); // Wyłącz diodę
-       ledState[i] = false; // Zapisz stan diody jako wyłączony
-       MIDI.sendNoteOff(i+36, 0, 1);
-      }      
+      for (int i = 0; i < 22; i++) {
+         if (freeComb[j][i] == true  && !ledState[i]){
+           digitalWrite(ledPins[i], HIGH); // Włącz diodę
+           ledState[i] = true; // Zapisz stan diody jako włączony
+           MIDI.sendNoteOn(i+36, 127, 1);
+          }
+         if (freeComb[j][i] == false && ledState[i]){
+           digitalWrite(ledPins[i], LOW); // Wyłącz diodę
+           ledState[i] = false; // Zapisz stan diody jako wyłączony
+           MIDI.sendNoteOff(i+36, 0, 1);
+         }
+      }        
+     combinationPins[j] = 0;
     }
    }
-  }
+  
 }
 
 
 
-void freeCombLedOff(){
+void freeCombLedOff(){  // anulowanie wolnej kombinacji
   for(int n = 0; n < 6; n++){
        combinationLedPins[n] = 0;
+       for (int i = 0; i < 22; i++) {
+       MIDI.sendNoteOff(i+36, 0, 1);
+       }
       }
 }
 
 void handleNoteOn(byte channel, byte pitch, byte velocity)
 {
-if (channel==1){
+if (channel==1){ // odbiór ewentualnego komunikatu włączajacego diodę LED pod registrem
    int i = pitch - 36;
    digitalWrite(ledPins[i], HIGH); // Włącz diodę
    ledState[i] = true; // Zapisz stan diody jako włączony
   }  
-  if (channel==9){ // odbiór komunikatu ABCPda
+  if (channel==9){ // odbiór komunikatu ABCPda i ustawianie danej kombinacji
    int i = pitch - 36;
    combinationPins[i] = 1;
+   if (pistonSetState == HIGH){
+   readFreeComb();
+   }
+   if (pistonSetState == LOW && millisStorage < millis()+500){
+    millisStorage = millis();
+   setFunction();
+   }
+   if (pistonSetEepromState == LOW && eepromWriteStop == 1){
+   saveToEEPROM();
+   eepromWriteStop = 0;
+   }
+   
    //digitalWrite(ledPins[i], HIGH); // Włącz diodę
    //ledState[i] = true; // Zapisz stan diody jako włączony
   } 
@@ -199,12 +229,12 @@ if (channel==1){
 
 void handleNoteOff(byte channel, byte pitch, byte velocity)
 {
-  if (channel==1){
+  if (channel==1){ // odbiór ewentualnego komunikatu wyłączajacego diodę LED pod registrem
      int i = pitch - 36;
      digitalWrite(ledPins[i], LOW); // Wyłącz diodę
      ledState[i] = false; // Zapisz stan diody jako wyłączony
     }
-  if (channel==9){ // odbiór komunikatu ABCPda
+  if (channel==9){ // odbiór komunikatu ABCPda i zerowanie danej kombinacji
    int i = pitch - 36;
    combinationPins[i] = 0;
    //digitalWrite(ledPins[i], HIGH); // Włącz diodę
@@ -213,3 +243,28 @@ void handleNoteOff(byte channel, byte pitch, byte velocity)
     // Do something when the note is released.
     // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
 }
+
+void saveToEEPROM() {
+  int address = 0; // Adres startowy w EEPROM
+  for (int j = 0; j < 6; j++) {
+    for (int i = 0; i < 22; i++) {
+      if (address < EEPROM.length()) { // Sprawdzenie, czy adres mieści się w EEPROM
+        EEPROM.update(address, freeComb[j][i]); // Zapis wartości (true/false jako 1/0)
+        address++;
+      }
+    }
+  }
+}
+
+void loadFromEEPROM() {
+  int address = 0; // Adres startowy w EEPROM
+  for (int j = 0; j < 6; j++) {
+    for (int i = 0; i < 22; i++) {
+      if (address < EEPROM.length()) { // Sprawdzenie, czy adres mieści się w EEPROM
+        freeComb[j][i] = EEPROM.read(address); // Odczyt wartości (1/0 jako true/false)
+        address++;
+      }
+    }
+  }
+}
+
